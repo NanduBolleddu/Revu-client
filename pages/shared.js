@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import API from "../lib/api";
-import MediaCard from "../components/MediaCard";
-import MediaDetail from "../components/MediaDetail";
+import DocumentCard from "../components/DocumentCard";
+import DocumentEditor from "../components/DocumentEditor";
 
-export default function SharedMediaPage({ keycloak }) {
-  const [sharedMedia, setSharedMedia] = useState([]);
+export default function SharedDocumentsPage({ keycloak }) {
+  const [sharedDocuments, setSharedDocuments] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,12 +15,13 @@ export default function SharedMediaPage({ keycloak }) {
   // Get unique organizations and roles for filtering
   const organizations = [
     ...new Set(
-      sharedMedia.map((item) => item.organization_name).filter(Boolean)
+      sharedDocuments.map((item) => item.organization_name).filter(Boolean)
     ),
   ];
+
   const roles = [
     ...new Set(
-      sharedMedia.map((item) => item.permission_level).filter(Boolean)
+      sharedDocuments.map((item) => item.permission_level).filter(Boolean)
     ),
   ];
 
@@ -56,27 +57,27 @@ export default function SharedMediaPage({ keycloak }) {
     fetchCurrentUser();
   }, [keycloak]);
 
-  // Fetch shared media once currentUserId is set
+  // Fetch shared documents once currentUserId is set
   useEffect(() => {
-    const fetchSharedMedia = async () => {
+    const fetchSharedDocuments = async () => {
       if (!currentUserId) return;
 
       setLoading(true);
       try {
-        const response = await API.get(`/media-shared/${currentUserId}`);
-        setSharedMedia(response.data);
+        const response = await API.get(`/document-shared/${currentUserId}`);
+        setSharedDocuments(response.data);
       } catch (err) {
-        console.error("Error fetching shared media:", err);
+        console.error("Error fetching shared documents:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSharedMedia();
+    fetchSharedDocuments();
   }, [currentUserId]);
 
-  // Filter shared media based on role and organization
-  const filteredMedia = sharedMedia.filter((item) => {
+  // Filter shared documents based on role and organization
+  const filteredDocuments = sharedDocuments.filter((item) => {
     const matchesRole =
       filterRole === "all" || item.permission_level === filterRole;
     const matchesOrg =
@@ -102,420 +103,391 @@ export default function SharedMediaPage({ keycloak }) {
   const getRoleBadgeColor = (role) => {
     switch (role) {
       case "owner":
-        return "bg-purple-600";
-      case "reviewer":
-        return "bg-blue-600";
-      case "viewer":
-        return "bg-green-600";
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "editor":
+        return "bg-blue-100 text-blue-800 border-blue-200";
       default:
-        return "bg-gray-600";
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  };
-
-  // Enhanced MediaCard for shared media
-  // Enhanced MediaCard for shared media - matches MediaCard.js styling
-  const SharedMediaCard = ({ item }) => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-    const src = `${API_BASE}${item.file_path}`;
-
-    return (
-      <div className="bg-gray-800/90 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-700/50 hover:border-purple-400/50 transition-all duration-300 group cursor-pointer shadow-lg hover:shadow-xl">
-        {/* Media Container */}
-        <div
-          className="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden"
-          onClick={() => setSelected(item)}
-        >
-          {/* Media Content */}
-          {item.type === "image" ? (
-            <img
-              src={src}
-              alt={item.title}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={(e) => {
-                e.target.src = "/placeholder-image.png";
-              }}
-            />
-          ) : (
-            <video
-              src={src}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              muted
-            />
-          )}
-
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-          {/* Permission Badge */}
-          <div className="absolute top-3 right-3">
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold text-white backdrop-blur-sm ${getRoleBadgeColor(item.permission_level)} shadow-lg`}
-            >
-              {item.permission_level?.toUpperCase()}
-            </span>
-          </div>
-
-          {/* Play icon for videos */}
-          {item.type === "video" && (
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform duration-300">
-                <div className="w-0 h-0 border-l-[12px] border-l-white border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1"></div>
-              </div>
-            </div>
-          )}
-
-          {/* Hover Overlay with Action Hint */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/30">
-            <div className="text-white text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-              <div className="text-sm font-medium mb-1">Click to view</div>
-              <div className="text-xs text-gray-300">
-                {item.permission_level === "viewer"
-                  ? "View only"
-                  : "Can comment & annotate"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Card Content */}
-        <div className="p-4">
-          {/* Title */}
-          <h3 className="font-semibold text-white text-lg mb-3 truncate group-hover:text-purple-300 transition-colors duration-200">
-            {item.title}
-          </h3>
-
-          {/* Metadata Grid */}
-          <div className="space-y-2.5">
-            {/* Shared by */}
-            <div className="flex items-center text-gray-400 group-hover:text-gray-300 transition-colors duration-200">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold mr-3 shadow-md">
-                {item.shared_by_username?.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm">
-                  <span className="text-white font-medium">
-                    {item.shared_by_username}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  Shared this with you
-                </div>
-              </div>
-            </div>
-
-            {/* Organization */}
-            {item.organization_name &&
-              item.organization_name !== "Unknown Organization" && (
-                <div className="flex items-center text-gray-400">
-                  <i className="fas fa-building w-4 mr-3 text-center text-purple-400"></i>
-                  <div className="flex-1">
-                    <div className="text-sm text-white font-medium truncate">
-                      {item.organization_name}
-                    </div>
-                    <div className="text-xs text-gray-500">Organization</div>
-                  </div>
-                </div>
-              )}
-
-            {/* Time & Message */}
-            <div className="flex items-start text-gray-400">
-              <i className="fas fa-clock w-4 mr-3 text-center text-blue-400 mt-0.5"></i>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm text-gray-300">
-                  {formatTimeAgo(item.shared_at)}
-                </div>
-                {item.message && (
-                  <div className="text-xs text-gray-400 mt-1 italic truncate">
-                    "{item.message}"
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Footer with permission indicator */}
-          <div className="mt-4 pt-3 border-t border-gray-700/50 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  item.permission_level === "reviewer"
-                    ? "bg-blue-400"
-                    : "bg-green-400"
-                } shadow-sm`}
-              ></div>
-              <span className="text-xs text-gray-400">
-                {item.permission_level === "reviewer"
-                  ? "Can interact"
-                  : "View only"}
-              </span>
-            </div>
-
-            <div className="text-xs text-gray-500">
-              {item.type === "image" ? "📷" : "🎥"} {item.type}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   if (!keycloak?.authenticated) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
-          <p className="text-gray-400">Please log in to view shared media.</p>
+      <>
+        <style jsx>{`
+          @import url("https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap");
+          @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
+
+          .material-icons {
+            font-family: "Material Icons";
+            font-weight: normal;
+            font-style: normal;
+            font-size: 20px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: "liga";
+            -webkit-font-smoothing: antialiased;
+          }
+
+          .google-font {
+            font-family:
+              "Google Sans",
+              -apple-system,
+              BlinkMacSystemFont,
+              "Segoe UI",
+              Roboto,
+              sans-serif;
+          }
+
+          .material-shadow {
+            box-shadow:
+              0 2px 4px 0 rgba(60, 64, 67, 0.3),
+              0 1px 6px 0 rgba(60, 64, 67, 0.15);
+          }
+
+          .material-shadow-hover:hover {
+            box-shadow:
+              0 4px 8px 0 rgba(60, 64, 67, 0.3),
+              0 2px 12px 0 rgba(60, 64, 67, 0.15);
+          }
+
+          .ripple-effect {
+            position: relative;
+            overflow: hidden;
+          }
+
+          .ripple-effect::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(66, 133, 244, 0.3);
+            transition:
+              width 0.6s,
+              height 0.6s,
+              top 0.6s,
+              left 0.6s;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+          }
+
+          .ripple-effect:active::before {
+            width: 300px;
+            height: 300px;
+          }
+        `}</style>
+
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 material-shadow">
+              <span className="material-icons text-blue-600 text-2xl">
+                share
+              </span>
+            </div>
+            <h1 className="text-2xl font-medium text-gray-900 google-font mb-4">
+              Shared Documents
+            </h1>
+            <p className="text-sm text-gray-600 google-font mb-6">
+              Please log in to view documents shared with you.
+            </p>
+            <button
+              onClick={() => keycloak.login()}
+              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 transition-colors google-font ripple-effect material-shadow-hover"
+            >
+              Login
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading shared media...</p>
+      <>
+        <style jsx>{`
+          @import url("https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap");
+          @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
+
+          .material-icons {
+            font-family: "Material Icons";
+            font-weight: normal;
+            font-style: normal;
+            font-size: 20px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: "liga";
+            -webkit-font-smoothing: antialiased;
+          }
+
+          .google-font {
+            font-family:
+              "Google Sans",
+              -apple-system,
+              BlinkMacSystemFont,
+              "Segoe UI",
+              Roboto,
+              sans-serif;
+          }
+
+          .material-shadow {
+            box-shadow:
+              0 2px 4px 0 rgba(60, 64, 67, 0.3),
+              0 1px 6px 0 rgba(60, 64, 67, 0.15);
+          }
+        `}</style>
+
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4 animate-spin"></div>
+            <p className="text-gray-600 google-font font-medium">
+              Loading shared documents...
+            </p>
+          </div>
         </div>
-      </div>
+      </>
+    );
+  }
+
+  // Document Editor View
+  if (selected) {
+    return (
+      <DocumentEditor
+        document={selected}
+        currentUser={currentUser}
+        onClose={() => setSelected(null)}
+        isSharedDocument={true}
+        permissionLevel={selected.permission_level}
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950/80 backdrop-blur-xl text-white p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-wide text-white mb-2">
-            Shared Media
-          </h1>
-          <p className="text-white/60 text-sm font-semibold">
-            Media shared with you by organization members
-          </p>
-        </div>
-        {/* Filters */}
-        {sharedMedia.length > 0 && (
-          <div className="mb-10 flex flex-wrap gap-8">
-            {/* Role Filter */}
-            <div className="flex flex-col">
-              <label className="block text-xs font-semibold uppercase text-white/60 tracking-wider mb-3">
-                Permission
-              </label>
-              <div className="relative group">
-                <select
-                  value={filterRole}
-                  onChange={(e) => setFilterRole(e.target.value)}
-                  className="appearance-none w-64 bg-white/[0.06] backdrop-blur-2xl border border-white/15 rounded-xl px-5 py-2.5 text-sm font-medium text-white/80 hover:text-white focus:text-white hover:bg-white/[0.10] focus:bg-white/[0.12] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-600/30 transition-all duration-300 ease-out shadow-lg hover:shadow-xl"
-                >
-                  <option value="all" className="bg-gray-900/80 text-white/90">
-                    All Permissions
-                  </option>
-                  {roles.map((role) => (
-                    <option
-                      key={role}
-                      value={role}
-                      className="bg-gray-900/80 text-white/80 hover:text-white"
-                    >
-                      {role.charAt(0).toUpperCase() + role.slice(1)}
-                    </option>
-                  ))}
-                </select>
-                {/* Dropdown Arrow */}
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors duration-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </span>
-              </div>
-            </div>
+    <>
+      <style jsx>{`
+        @import url("https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap");
+        @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
 
-            {/* Organization Filter */}
-            {organizations.length > 0 && (
-              <div className="flex flex-col">
-                <label className="block text-xs font-semibold uppercase text-white/60 tracking-wider mb-3">
-                  Organization
-                </label>
-                <div className="relative group">
-                  <select
-                    value={filterOrg}
-                    onChange={(e) => setFilterOrg(e.target.value)}
-                    className="appearance-none w-64 bg-white/[0.06] backdrop-blur-2xl border border-white/15 rounded-xl px-5 py-2.5 text-sm font-medium text-white/80 hover:text-white focus:text-white hover:bg-white/[0.10] focus:bg-white/[0.12] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-600/30 transition-all duration-300 ease-out shadow-lg hover:shadow-xl"
-                  >
-                    <option
-                      value="all"
-                      className="bg-gray-900/80 text-white/90"
-                    >
-                      All Organizations
-                    </option>
-                    {organizations.map((org) => (
-                      <option
-                        key={org}
-                        value={org}
-                        className="bg-gray-900/80 text-white/80 hover:text-white"
-                      >
-                        {org}
-                      </option>
-                    ))}
-                  </select>
-                  {/* Dropdown Arrow */}
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg
-                      className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors duration-300"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        .material-icons {
+          font-family: "Material Icons";
+          font-weight: normal;
+          font-style: normal;
+          font-size: 20px;
+          line-height: 1;
+          letter-spacing: normal;
+          text-transform: none;
+          display: inline-block;
+          white-space: nowrap;
+          word-wrap: normal;
+          direction: ltr;
+          -webkit-font-feature-settings: "liga";
+          -webkit-font-smoothing: antialiased;
+        }
 
-        {/* Media grid */}
-        {filteredMedia.length === 0 ? (
-          <div className="text-center py-20">
-            <h3 className="text-2xl font-semibold mb-3 text-white/90 tracking-wide">
-              {sharedMedia.length === 0
-                ? "No Shared Media"
-                : "No Matches Found"}
-            </h3>
-            <p className="text-white/50 text-sm">
-              {sharedMedia.length === 0
-                ? "You haven’t received any media yet."
-                : "Try changing your filters to see more content."}
+        .google-font {
+          font-family:
+            "Google Sans",
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            sans-serif;
+        }
+
+        .material-shadow {
+          box-shadow:
+            0 2px 4px 0 rgba(60, 64, 67, 0.3),
+            0 1px 6px 0 rgba(60, 64, 67, 0.15);
+        }
+
+        .material-shadow-hover:hover {
+          box-shadow:
+            0 4px 8px 0 rgba(60, 64, 67, 0.3),
+            0 2px 12px 0 rgba(60, 64, 67, 0.15);
+        }
+
+        .ripple-effect {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .ripple-effect::before {
+          content: "";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          border-radius: 50%;
+          background: rgba(66, 133, 244, 0.3);
+          transition:
+            width 0.6s,
+            height 0.6s,
+            top 0.6s,
+            left 0.6s;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+        }
+
+        .ripple-effect:active::before {
+          width: 300px;
+          height: 300px;
+        }
+
+        .badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 500;
+          line-height: 1.4;
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+          border-width: 1px;
+          border-style: solid;
+          max-width: 150px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .badge:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .badge-icon {
+          font-size: 14px;
+          margin-right: 4px;
+        }
+      `}</style>
+
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-medium text-gray-900 google-font">
+              Shared Documents
+            </h1>
+            <p className="text-sm text-gray-600 google-font mt-1">
+              Documents shared with you by organization members
             </p>
           </div>
-        ) : (
-          <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredMedia.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => setSelected(item)}
-                className="group cursor-pointer relative"
-              >
-                <div className="relative p-[1px] rounded-2xl bg-gradient-to-br from-white/20 via-white/5 to-transparent hover:from-white/30 hover:via-white/10 transition-all duration-700 hover:scale-[1.01] shadow-2xl hover:shadow-3xl">
-                  <div className="relative bg-gradient-to-br from-black via-gray-900 to-black rounded-2xl overflow-hidden backdrop-blur-xl">
-                    {/* Media Container */}
-                    <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-black to-gray-900 rounded-t-2xl">
-                      {item.type === "image" ? (
-                        <img
-                          src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}${item.file_path}`}
-                          alt={item.title}
-                          className="w-full h-full object-cover transition-all duration-1000 ease-out group-hover:scale-110 group-hover:contrast-125"
-                          onError={(e) => {
-                            e.target.src = "/placeholder-image.png";
-                          }}
-                        />
-                      ) : (
-                        <video
-                          src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}${item.file_path}`}
-                          className="w-full h-full object-cover transition-all duration-1000 ease-out group-hover:scale-110"
-                          muted
-                          preload="metadata"
-                          style={{ background: "#222" }}
-                        />
-                      )}
-                      {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10 opacity-70 group-hover:opacity-90 transition duration-500"></div>
-                      {/* Permission Badge */}
-                      <div className="absolute top-3 right-3">
-                        <span
-                          className={`
-                           relative inline-block px-4 py-1.5 text-[0.7rem] font-bold tracking-wide uppercase
-                           text-white rounded-lg 
-                           border border-white/20 backdrop-blur-md
-                           ${
-                             item.permission_level?.toLowerCase() === "reviewer"
-                               ? "bg-blue-600"
-                               : "bg-green-600"
-                           }
-                         `}
-                        >
-                          <span className="drop-shadow-sm">
-                            {item.permission_level?.toUpperCase()}
-                          </span>
-                        </span>
-                      </div>
 
-                      {/* Play Button Animation */}
-                      {item.type === "video" && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-12 h-12 bg-purple-500/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/50 opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-500">
-                            <div className="w-0 h-0 border-l-[12px] border-l-white border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1"></div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    {/* Card Content */}
-                    <div className="p-6 bg-white/[0.02] backdrop-blur-md border-t border-white/10">
-                      <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2 leading-tight group-hover:text-blue-400 transition duration-300">
-                        {item.title}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-white/70 mb-2">
-                        <span className="font-bold">
-                          {item.shared_by_username || "Unknown"}
+          {/* Filters */}
+          {(roles.length > 0 || organizations.length > 0) && (
+            <div className="bg-white rounded-lg material-shadow p-4 mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+              <div className="flex flex-wrap gap-4 items-center">
+                {organizations.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 google-font">
+                      Organization:
+                    </label>
+                    <select
+                      value={filterOrg}
+                      onChange={(e) => setFilterOrg(e.target.value)}
+                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent google-font text-gray-900"
+                    >
+                      <option value="all">All Organizations</option>
+                      {organizations.map((org) => (
+                        <option key={org} value={org}>
+                          {org}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-sm text-gray-600 google-font">
+                {filteredDocuments.length} shared document
+                {filteredDocuments.length !== 1 ? "s" : ""}
+              </div>
+            </div>
+          )}
+
+          {/* Documents Grid */}
+          {filteredDocuments.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 material-shadow">
+                <span className="material-icons text-gray-400 text-2xl">
+                  share
+                </span>
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 google-font mb-2">
+                {sharedDocuments.length === 0
+                  ? "No shared documents"
+                  : "No documents match your filters"}
+              </h3>
+              <p className="text-sm text-gray-600 google-font">
+                {sharedDocuments.length === 0
+                  ? "You haven't received any shared documents yet."
+                  : "Try changing your filters to see more content."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredDocuments.map((document) => (
+                <div key={document.id} className="relative">
+                  <DocumentCard
+                    item={document}
+                    onClick={setSelected}
+                    onDelete={() => {}} // Disable delete for shared documents
+                    onEdit={() => {}} // Disable edit for shared documents
+                    currentUserId={currentUserId}
+                    permissionLevel={document.permission_level} // Pass permission level
+                  />
+
+                  {/* Shared document overlay info */}
+                  <div className="absolute top-2 left-2 z-10">
+                    <div className="flex flex-col gap-1.5">
+                      <span
+                        className={`badge ${getRoleBadgeColor(document.permission_level)} google-font`}
+                      >
+                        <span className="material-icons badge-icon">
+                          person
                         </span>
-                        <span>· {formatTimeAgo(item.shared_at)}</span>
-                      </div>
-                      {item.organization_name &&
-                        item.organization_name !== "Unknown Organization" && (
-                          <div className="flex items-center text-sm text-blue-300 mb-2">
-                            <span className="truncate">
-                              {item.organization_name}
-                            </span>
-                          </div>
-                        )}
-                      {item.message && (
-                        <p className="text-xs text-white/60 italic line-clamp-2 mb-2">
-                          "{item.message}"
-                        </p>
-                      )}
-                      <div className="mt-2 flex items-center justify-between text-xs text-white/50">
-                        <span>
-                          Access :
-                          {item.permission_level === "reviewer"
-                            ? " Can Interact"
-                            : " View Only"}
-                        </span>
-                        <span>{item.type === "image" ? "Image" : "Video"}</span>
-                      </div>
+                        {document.permission_level.charAt(0).toUpperCase() +
+                          document.permission_level.slice(1)}
+                      </span>
+                      <span className="badge bg-gray-100 text-gray-800 border-gray-200 google-font">
+                        <span className="material-icons badge-icon">share</span>
+                        {document.shared_by_username}
+                      </span>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
-        {/* Media Detail Modal */}
-        {selected && (
-          <MediaDetail
-            item={selected}
-            onClose={() => setSelected(null)}
-            currentUser={currentUser}
-            permissionLevel={selected.permission_level}
-            isSharedMedia={true}
-          />
-        )}
+                  {/* Share message if exists */}
+                  {document.message && (
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 material-shadow">
+                        <p className="text-xs text-blue-800 italic google-font">
+                          "{document.message}"
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

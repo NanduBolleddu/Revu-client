@@ -12,12 +12,6 @@ body {
 }
 
 html,
-body {
-  background-color: #101010; /* dark base like MediaDetail */
-  color: white;
-}
-
-html,
 body,
 * {
   scrollbar-width: none; /* Firefox */
